@@ -9,7 +9,21 @@ function getBasket() {
     const basket = localStorage.getItem("basket");
     if (!basket) return [];
     const parsed = JSON.parse(basket);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    // Migrate legacy flat-string format (e.g. ["apple", "apple", "banana"])
+    if (parsed.length > 0 && typeof parsed[0] === "string") {
+      const migrated = [];
+      parsed.forEach((product) => {
+        const existing = migrated.find((item) => item.product === product);
+        if (existing) {
+          existing.quantity += 1;
+        } else {
+          migrated.push({ product, quantity: 1 });
+        }
+      });
+      return migrated;
+    }
+    return parsed;
   } catch (error) {
     console.warn("Error parsing basket from localStorage:", error);
     return [];
@@ -18,7 +32,12 @@ function getBasket() {
 
 function addToBasket(product) {
   const basket = getBasket();
-  basket.push(product);
+  const existing = basket.find((item) => item.product === product);
+  if (existing) {
+    existing.quantity += 1;
+  } else {
+    basket.push({ product, quantity: 1 });
+  }
   localStorage.setItem("basket", JSON.stringify(basket));
 }
 
@@ -37,11 +56,11 @@ function renderBasket() {
     if (cartButtonsRow) cartButtonsRow.style.display = "none";
     return;
   }
-  basket.forEach((product) => {
+  basket.forEach(({ product, quantity }) => {
     const item = PRODUCTS[product];
     if (item) {
       const li = document.createElement("li");
-      li.innerHTML = `<span class='basket-emoji'>${item.emoji}</span> <span>${item.name}</span>`;
+      li.innerHTML = `<span class='basket-emoji'>${item.emoji}</span> <span>${quantity}x ${item.name}</span>`;
       basketList.appendChild(li);
     }
   });
@@ -58,8 +77,9 @@ function renderBasketIndicator() {
     indicator.className = "basket-indicator";
     basketLink.appendChild(indicator);
   }
-  if (basket.length > 0) {
-    indicator.textContent = basket.length;
+  const totalQuantity = basket.reduce((sum, item) => sum + item.quantity, 0);
+  if (totalQuantity > 0) {
+    indicator.textContent = totalQuantity;
     indicator.style.display = "flex";
   } else {
     indicator.style.display = "none";
