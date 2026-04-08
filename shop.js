@@ -54,24 +54,37 @@ function clearBasket() {
   localStorage.removeItem("basket");
 }
 
-function renderBasket() {
+function getBasketSummary() {
   const basket = getBasket();
+  const summary = {};
+  basket.forEach((product) => {
+    if (!PRODUCTS[product]) return;
+    summary[product] = (summary[product] || 0) + 1;
+  });
+  return summary;
+}
+
+function renderBasket() {
+  const basketSummary = getBasketSummary();
   const basketList = document.getElementById("basketList");
   const cartButtonsRow = document.querySelector(".cart-buttons-row");
   if (!basketList) return;
   basketList.innerHTML = "";
-  if (basket.length === 0) {
+  const productKeys = Object.keys(basketSummary);
+  if (productKeys.length === 0) {
     basketList.innerHTML = "<li>No products in basket.</li>";
     if (cartButtonsRow) cartButtonsRow.style.display = "none";
     return;
   }
-  basket.forEach((product) => {
+  productKeys.forEach((product) => {
     const item = PRODUCTS[product];
-    if (item) {
-      const li = document.createElement("li");
-      li.innerHTML = `<span class='basket-emoji'>${item.emoji}</span> <span>${item.name}</span>`;
-      basketList.appendChild(li);
-    }
+    const quantity = basketSummary[product];
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <span class='basket-emoji'>${item.emoji}</span>
+      <span>${quantity}x ${item.name}</span>
+    `;
+    basketList.appendChild(li);
   });
   if (cartButtonsRow) cartButtonsRow.style.display = "flex";
 }
