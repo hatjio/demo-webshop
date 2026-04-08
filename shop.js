@@ -4,6 +4,8 @@ const PRODUCTS = {
   lemon: { name: "Lemon", emoji: "🍋" },
 };
 
+// yo mama
+
 function getBasket() {
   try {
     const basket = localStorage.getItem("basket");
