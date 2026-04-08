@@ -2,7 +2,13 @@ const PRODUCTS = {
   apple: { name: "Apple", emoji: "🍏" },
   banana: { name: "Banana", emoji: "🍌" },
   lemon: { name: "Lemon", emoji: "🍋" },
+  strawberry: { name: "Strawberry", emoji: "🍓" },
 };
+
+// Define incompatible fruit combinations
+const INCOMPATIBLE_COMBINATIONS = [
+  { fruit1: "strawberry", fruit2: "banana" },
+];
 
 function getBasket() {
   try {
@@ -16,7 +22,29 @@ function getBasket() {
   }
 }
 
+function canAddToBasket(product) {
+  const basket = getBasket();
+  
+  // Check for incompatible combinations
+  for (const combination of INCOMPATIBLE_COMBINATIONS) {
+    const hasIncompatible =
+      (combination.fruit1 === product && basket.includes(combination.fruit2)) ||
+      (combination.fruit2 === product && basket.includes(combination.fruit1));
+    
+    if (hasIncompatible) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
 function addToBasket(product) {
+  if (!canAddToBasket(product)) {
+    alert("Strawberries and bananas cannot be combined.");
+    return;
+  }
+  
   const basket = getBasket();
   basket.push(product);
   localStorage.setItem("basket", JSON.stringify(basket));
