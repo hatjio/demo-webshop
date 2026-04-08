@@ -9,7 +9,26 @@ function getBasket() {
     const basket = localStorage.getItem("basket");
     if (!basket) return [];
     const parsed = JSON.parse(basket);
-    return Array.isArray(parsed) ? parsed : [];
+    // Support both old format (array of strings) and new format (array of objects)
+    if (Array.isArray(parsed)) {
+      if (parsed.length === 0) return [];
+      // Check if it's the old format (array of strings)
+      if (typeof parsed[0] === "string") {
+        // Convert old format to new format
+        const newBasket = [];
+        parsed.forEach((product) => {
+          const existing = newBasket.find((item) => item.product === product);
+          if (existing) {
+            existing.quantity++;
+          } else {
+            newBasket.push({ product, quantity: 1 });
+          }
+        });
+        return newBasket;
+      }
+      return parsed;
+    }
+    return [];
   } catch (error) {
     console.warn("Error parsing basket from localStorage:", error);
     return [];
@@ -18,7 +37,12 @@ function getBasket() {
 
 function addToBasket(product) {
   const basket = getBasket();
-  basket.push(product);
+  const existingItem = basket.find((item) => item.product === product);
+  if (existingItem) {
+    existingItem.quantity++;
+  } else {
+    basket.push({ product, quantity: 1 });
+  }
   localStorage.setItem("basket", JSON.stringify(basket));
 }
 
@@ -37,11 +61,12 @@ function renderBasket() {
     if (cartButtonsRow) cartButtonsRow.style.display = "none";
     return;
   }
-  basket.forEach((product) => {
-    const item = PRODUCTS[product];
-    if (item) {
+  basket.forEach((item) => {
+    const product = PRODUCTS[item.product];
+    if (product) {
       const li = document.createElement("li");
-      li.innerHTML = `<span class='basket-emoji'>${item.emoji}</span> <span>${item.name}</span>`;
+      const quantityText = item.quantity > 1 ? `${item.quantity}x` : "1x";
+      li.innerHTML = `<span class='basket-emoji'>${product.emoji}</span> <span>${quantityText} ${product.name}</span>`;
       basketList.appendChild(li);
     }
   });
@@ -58,8 +83,9 @@ function renderBasketIndicator() {
     indicator.className = "basket-indicator";
     basketLink.appendChild(indicator);
   }
-  if (basket.length > 0) {
-    indicator.textContent = basket.length;
+  const totalItems = basket.reduce((sum, item) => sum + item.quantity, 0);
+  if (totalItems > 0) {
+    indicator.textContent = totalItems;
     indicator.style.display = "flex";
   } else {
     indicator.style.display = "none";
